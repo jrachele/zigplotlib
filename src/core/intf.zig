@@ -10,49 +10,49 @@ fn checkFunctionImplementation(
     comptime Field: std.builtin.Type.StructField,
     comptime Actual: type,
 ) void {
-    const Function =  Field.type;
+    const Function = Field.type;
     const function = @typeInfo(Function);
 
-    if (function != .Fn) @compileError("The Interface should only contains functions (as field)");
-    if (function.Fn.is_generic) @compileError("Generic functions are not supported!");
-    if (function.Fn.is_var_args) @compileError("Variadic functions are not supported!");
+    if (function != .@"fn") @compileError("The Interface should only contains functions (as field)");
+    if (function.@"fn".is_generic) @compileError("Generic functions are not supported!");
+    if (function.@"fn".is_var_args) @compileError("Variadic functions are not supported!");
 
     const actual = @typeInfo(Actual);
-    if (actual != .Struct) @compileError(comptimePrint("'{s}' should be a struct that implements '{s}'", .{
+    if (actual != .@"struct") @compileError(comptimePrint("'{s}' should be a struct that implements '{s}'", .{
         @typeName(Actual),
         @typeName(Interface),
     }));
 
-    inline for (actual.Struct.decls) |decl| {
+    inline for (actual.@"struct".decls) |decl| {
         if (comptime std.mem.eql(u8, decl.name, Field.name)) {
             const decl_ = @field(Actual, decl.name);
             const Decl = @TypeOf(decl_);
             const decl_info = @typeInfo(Decl);
 
-            if (decl_info != .Fn) @compileError(comptimePrint("Invalid Type for '{s}', should be {s}", .{
+            if (decl_info != .@"fn") @compileError(comptimePrint("Invalid Type for '{s}', should be {s}", .{
                 Field.name,
                 @typeName(Function),
             }));
-            if (decl_info.Fn.is_generic or decl_info.Fn.is_var_args) @compileError(comptimePrint("Invalid Type for '{s}', should be {s}", .{
+            if (decl_info.@"fn".is_generic or decl_info.@"fn".is_var_args) @compileError(comptimePrint("Invalid Type for '{s}', should be {s}", .{
                 Field.name,
                 @typeName(Function),
             }));
 
-            inline for (function.Fn.params, decl_info.Fn.params, 0..) |expected_param, actual_param, i| {
+            inline for (function.@"fn".params, decl_info.@"fn".params, 0..) |expected_param, actual_param, i| {
                 if (i == 0) {
                     if (expected_param.type == *const anyopaque) {
                         if (actual_param.type != *const Actual) @compileError(comptimePrint("'self' (the 1st argument) should be of type '*const {s}'\nDefinition for '{s}':\n{s}", .{
                             @typeName(Actual),
                             Field.name,
                             @typeName(Function),
-                        }));   
+                        }));
                         continue;
                     } else if (expected_param.type == *anyopaque) {
                         if (actual_param.type != *Actual) @compileError(comptimePrint("'self' (the 1st argument) should be of type '*{s}'\nDefinition for '{s}':\n{s}", .{
                             @typeName(Actual),
                             Field.name,
                             @typeName(Function),
-                        }));   
+                        }));
                         continue;
                     }
                 }
@@ -66,7 +66,7 @@ fn checkFunctionImplementation(
                 }));
             }
 
-            if (function.Fn.return_type != decl_info.Fn.return_type) @compileError(comptimePrint("Invalid return type for '{s}', should be {s}\nDefinition for '{s}':\n{s}", .{
+            if (function.@"fn".return_type != decl_info.@"fn".return_type) @compileError(comptimePrint("Invalid return type for '{s}', should be {s}\nDefinition for '{s}':\n{s}", .{
                 Field.name,
                 @typeName(Function),
                 Field.name,
@@ -89,13 +89,13 @@ fn checkFunctionImplementation(
 /// Ensure that the `Actual` type implements the given `Interface` type.
 pub fn ensureImplement(
     comptime Interface: type,
-    comptime Actual: type, 
+    comptime Actual: type,
 ) void {
     const interface = @typeInfo(Interface);
 
-    if (interface != .Struct) @compileError("The Interface should be a struct containing the functions as fields");
+    if (interface != .@"struct") @compileError("The Interface should be a struct containing the functions as fields");
 
-    inline for (interface.Struct.fields) |field| {
+    inline for (interface.@"struct".fields) |field| {
         checkFunctionImplementation(Interface, field, Actual);
     }
 }
